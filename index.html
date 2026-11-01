@@ -19,6 +19,8 @@ h1{margin:0;font-size:clamp(28px,8.5vw,42px);font-weight:900;color:#fff;letter-s
 .pill{background:rgba(20,50,35,.7);color:#fff;font-weight:700;font-size:18px;line-height:1;font-family:inherit;border:2px solid rgba(255,255,255,.35);
   padding:7px 14px;border-radius:99px;font-variant-numeric:tabular-nums;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 button.pill{pointer-events:auto;cursor:pointer}
+button.ico{padding:7px 10px;min-width:44px;min-height:34px}
+button.ico.off{opacity:.55}
 button.pill:active,.big:active{transform:scale(.95)}
 .bad{background:#b3261e;transition:background .1s}
 #hint{position:absolute;left:50%;white-space:nowrap;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 14px)}
@@ -27,24 +29,126 @@ button.pill:active,.big:active{transform:scale(.95)}
 .overlay.hide{display:none}
 .overlay h2{margin:0;font-size:40px;font-weight:900;text-shadow:0 3px 0 #14301f}
 .overlay p{margin:0;font-size:19px;max-width:300px;line-height:1.4}
+.overlay p.small{font-size:16px;opacity:.85}
 .big{font-weight:800;font-size:26px;line-height:1;font-family:inherit;color:#3a2200;background:#ffc93c;border:3px solid #14301f;border-radius:16px;
   padding:14px 38px;box-shadow:0 5px 0 #14301f;cursor:pointer;margin-top:6px}
+.big.sec{font-size:19px;background:#fff;padding:10px 26px;box-shadow:0 4px 0 #14301f;margin-top:0}
+.link{background:none;border:0;color:#fff;opacity:.8;text-decoration:underline;font:inherit;font-size:15px;cursor:pointer;padding:10px}
 .hit{fill:transparent;cursor:pointer}
 #fx{pointer-events:none}
-.found .pop{animation:pop .55s cubic-bezier(.3,1.6,.5,1)}
+.found .pop{animation:pop .6s cubic-bezier(.3,1.4,.5,1)}
 .pop,.mark,.hintring,.rip{transform-box:fill-box;transform-origin:center}
 .mark{animation:in .35s ease-out}
 .hintring{fill:none;stroke:#ffd23f;stroke-width:4;animation:pulse .8s ease-out 3}
 .rip{fill:none;stroke:#fff;stroke-width:2;animation:rip .45s ease-out forwards}
-@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.7) rotate(-8deg)}100%{transform:scale(1.15)}}
+/* Ruhe-Animation: innere Gruppe (.ia), damit Position/Skalierung/Flip unberührt bleiben */
+.ia{transform-box:fill-box;transform-origin:center bottom;animation:waddle var(--wd,3s) ease-in-out var(--wl,0s) infinite}
+.eye{transform-box:fill-box;transform-origin:center;animation:blink var(--bl,5s) linear var(--bd,0s) infinite}
+.found .ia,.found .eye{animation:none}
+@keyframes waddle{0%,100%{transform:rotate(-2deg) translateY(0)}50%{transform:rotate(2deg) translateY(-1.2px)}}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+@keyframes pop{0%{transform:scale(1)}35%{transform:translateY(-12px) scale(1.6) rotate(-8deg)}65%{transform:translateY(0) scale(1.7) rotate(-4deg)}100%{transform:scale(1.15)}}
 @keyframes in{from{transform:scale(0);opacity:0}}
 @keyframes pulse{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.6);opacity:0}}
 @keyframes rip{from{transform:scale(.3);opacity:.8}to{transform:scale(1.5);opacity:0}}
+@media (prefers-reduced-motion:reduce){.ia,.eye{animation:none!important}}
 </style>
 </head>
 <body>
 
 <svg id="game" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- Ente: Blick nach links, wird per JS in jede Ente kopiert (damit CSS-Animationen pro Ente laufen) -->
+  <symbol id="duck" viewBox="0 0 40 40" overflow="visible">
+    <g stroke="#111" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+      <ellipse cx="15" cy="37.4" rx="3.6" ry="1.9" fill="#ff9a1f"/><ellipse cx="26" cy="37.4" rx="3.6" ry="1.9" fill="#ff9a1f"/>
+      <path d="M32 21Q39 20 38.5 13Q34.5 18 31 17Z" fill="#fff"/>
+      <ellipse cx="21" cy="26" rx="15.5" ry="10.5" fill="#fff"/>
+      <path d="M17 24Q25 20.5 30 26.5Q25 32.5 18 29.5Q15 27 17 24Z" fill="#eaf0f5"/>
+      <circle cx="13" cy="13.5" r="10.8" fill="#fff"/>
+      <path d="M12 3.2Q10.5 .6 13.5 .8Q15.5 1.4 14.4 3.4" fill="none"/>
+      <ellipse cx="4.4" cy="16.2" rx="3.9" ry="2.5" fill="#ffa81c"/>
+    </g>
+    <ellipse cx="12.6" cy="19.2" rx="2.8" ry="1.8" fill="#ff8fb3" opacity=".8"/>
+    <g class="eye"><circle cx="10.8" cy="11.8" r="3" fill="#111"/><circle cx="9.8" cy="10.7" r="1.15" fill="#fff"/><circle cx="12" cy="13" r=".55" fill="#fff"/></g>
+  </symbol>
+
+  <!-- gemeinsame Kulissen; Farben per CSS-Variablen anpassbar -->
+  <g id="bush" style="stroke:var(--bs,#1d5233)" stroke-width="2.5">
+    <circle cx="-24" cy="4" r="20" style="fill:var(--b1,#3f9150)"/><circle cx="24" cy="4" r="20" style="fill:var(--b1,#3f9150)"/>
+    <circle cx="0" cy="-8" r="26" style="fill:var(--b2,#47a057)"/><circle cx="0" cy="8" r="22" style="fill:var(--b1,#3f9150)"/>
+    <circle cx="-8" cy="-16" r="8" style="fill:var(--b3,#6cc078)" stroke="none"/><circle cx="16" cy="-4" r="6" style="fill:var(--b3,#6cc078)" stroke="none"/>
+  </g>
+  <g id="rock">
+    <path d="M-26 10Q-28 -8-10 -16Q8 -22 22 -8Q32 4 26 10Z" fill="#8f949c" stroke="#2f3338" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M-14 -8Q-2 -14 8 -10" stroke="#c9cdd3" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>
+</defs>
+
+<g id="back"></g>
+<g id="ducks"></g>
+<g id="front"></g>
+<g id="hits"></g>
+<g id="fx"></g>
+</svg>
+
+<div id="hud">
+  <h1 id="lv">Level 1</h1>
+  <div class="row">
+    <span class="pill" id="cnt">0 / 10</span>
+    <span class="pill" id="tm">0:00</span>
+    <button class="pill ico" id="mus" aria-label="Musik an/aus">🎵</button>
+    <button class="pill ico" id="sfx" aria-label="Soundeffekte an/aus">🔊</button>
+  </div>
+</div>
+<button class="pill" id="hint">💡 Hinweis (+10 s)</button>
+
+<div class="overlay" id="start">
+  <h2>Find the Ducks</h2>
+  <p>Zehn Enten haben sich versteckt. Finde sie alle, so schnell du kannst!</p>
+  <p class="small" id="cont"></p>
+  <button class="big" id="go">Start</button>
+  <button class="link" id="reset">Von vorn</button>
+</div>
+<div class="overlay hide" id="win">
+  <h2>Geschafft!</h2>
+  <p id="res"></p>
+  <p class="small" id="bt"></p>
+  <button class="big" id="next">Nächstes Level</button>
+  <button class="big sec" id="again">Nochmal</button>
+</div>
+<div class="overlay hide" id="done">
+  <h2>Alle 10 Level geschafft!</h2>
+  <p id="dres"></p>
+  <button class="big" id="restart">Von vorn</button>
+  <button class="big sec" id="again2">Level 10 nochmal</button>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const svg = $('#game'), Lb = $('#back'), Ld = $('#ducks'), Lfr = $('#front'), Lh = $('#hits'), Lf = $('#fx');
+  const N = 10, MAXL = 10;
+  const DUCK = $('#duck').innerHTML;
+  // Entenfarben um Anteil a Richtung rgb mischen (wie feColorMatrix, aber ohne Filter)
+  const tintDuck = (a, rgb) => DUCK.replace(/#([0-9a-f]{6}|[0-9a-f]{3})\b/gi, (_, h) => {
+    if (h.length === 3) h = h.replace(/./g, x => x + x);
+    return 'rgb(' + [0, 2, 4].map((o, j) => Math.round(parseInt(h.substr(o, 2), 16) * (1 - a) + rgb[j] * a)).join() + ')';
+  });
+
+  // ---------- Speicher (localStorage, immer mit try/catch) ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('ducks.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('ducks.' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  // ---------- Szenen ----------
+  // Jede Szene: back (Hintergrund + defs), front (Vordergrund, verdeckt Enten), slots, tint (Farbbänder [y-max, [r,g,b]] für getönte Enten).
+  // Versteck-Slots: [Typ, x, y]  o = offen, h = hinter Vordergrund, t = getarnt (transparent). Nur y von 110 bis 620 (HUD / Hinweis-Button).
+  const SCENES = [{
+    name: 'See',
+    tint: [[300, [150, 190, 185]], [470, [90, 170, 190]], [1e4, [120, 170, 90]]],
+    back: `
 <defs>
   <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b5dcd6"/><stop offset="1" stop-color="#eef7ea"/></linearGradient>
   <linearGradient id="lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86cfd2"/><stop offset="1" stop-color="#2f8fa6"/></linearGradient>
@@ -52,28 +156,6 @@ button.pill:active,.big:active{transform:scale(.95)}
   <pattern id="planks" width="16" height="30" patternUnits="userSpaceOnUse">
     <rect width="16" height="30" fill="#bf8b52"/><rect width="2.5" height="30" fill="#5e3a1c"/><rect x="7" y="6" width="1.5" height="9" fill="#92602f"/>
   </pattern>
-
-  <symbol id="duck" viewBox="0 0 40 40" overflow="visible">
-    <g stroke="#111" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-      <path d="M17 33l-1 4M16 37l-3 0M16 37l3 0M25 33l-1 4M24 37l-3 0M24 37l3 0" fill="none" stroke="#f08a00" stroke-width="2.4"/>
-      <path d="M17 33l-1 4M25 33l-1 4" fill="none" stroke="#111" stroke-width="0"/>
-      <path d="M8 24C8 17 14 15 20 17C27 15 34 15 37 12C36 20 35 33 22 35C13 36 8 31 8 24Z" fill="#fff"/>
-      <path d="M17 24C21 22 27 24 29 28C25 31 18 30 17 24Z" fill="#e9eef2"/>
-      <circle cx="12" cy="13" r="7.5" fill="#fff"/>
-      <path d="M5.5 11C1 11 0 15 2 16.5C4 18 7 17 8 15Z" fill="#ffa81c"/>
-    </g>
-    <circle cx="10.5" cy="11.5" r="1.4" fill="#111"/>
-  </symbol>
-
-  <g id="bush" stroke="#1d5233" stroke-width="2.5">
-    <circle cx="-24" cy="4" r="20" fill="#3f9150"/><circle cx="24" cy="4" r="20" fill="#3f9150"/>
-    <circle cx="0" cy="-8" r="26" fill="#47a057"/><circle cx="0" cy="8" r="22" fill="#3f9150"/>
-    <circle cx="-8" cy="-16" r="8" fill="#6cc078" stroke="none"/><circle cx="16" cy="-4" r="6" fill="#6cc078" stroke="none"/>
-  </g>
-  <g id="rock">
-    <path d="M-26 10Q-28 -8-10 -16Q8 -22 22 -8Q32 4 26 10Z" fill="#8f949c" stroke="#2f3338" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M-14 -8Q-2 -14 8 -10" stroke="#c9cdd3" stroke-width="3" fill="none" stroke-linecap="round"/>
-  </g>
   <g id="pad"><ellipse rx="15" ry="6" fill="#58b052" stroke="#2a6b30" stroke-width="1.5"/><path d="M0 0L15 -3" stroke="#2a6b30" fill="none"/></g>
   <g id="lotus"><circle r="4.5" fill="#ff9fc4" stroke="#b24a78" stroke-width="1.5"/><circle r="1.5" fill="#ffe066"/></g>
   <g id="reed" stroke="#4d7a2e" stroke-width="2.5" fill="none" stroke-linecap="round">
@@ -90,8 +172,6 @@ button.pill:active,.big:active{transform:scale(.95)}
   <g id="trunk"><path d="M-7 0Q6 180-4 360L11 360Q21 180 8 0Z" fill="#9a6a3c" stroke="#4a2c14" stroke-width="2.5"/>
     <path d="M-5 0Q8 180-2 360" fill="none" stroke="#6e4524" stroke-width="12" stroke-dasharray="3 14" opacity=".6"/></g>
 </defs>
-
-<g id="back">
   <rect x="-600" y="-600" width="1600" height="900" fill="url(#sky)"/>
   <circle cx="300" cy="70" r="60" fill="#fff" opacity=".45"/>
   <path d="M-600 300V190L20 130L90 190L170 110L260 200L330 140L420 200L1000 170V300Z" fill="#a8cdc0"/>
@@ -107,7 +187,7 @@ button.pill:active,.big:active{transform:scale(.95)}
   <use href="#pad" x="130" y="400"/><use href="#pad" x="250" y="396"/><use href="#pad" x="182" y="350"/><use href="#pad" x="320" y="350"/>
   <use href="#pad" x="72" y="360"/><use href="#pad" x="352" y="505"/><use href="#pad" x="190" y="522"/><use href="#pad" x="45" y="420"/>
   <use href="#lotus" x="184" y="348"/><use href="#lotus" x="322" y="348"/><use href="#lotus" x="252" y="394"/>
-  <use href="#rock" x="300" y="520"/><use href="#rock" x="92" y="502" transform="translate(0 0)"/><use href="#rock" transform="translate(240 345) scale(.5)"/>
+  <use href="#rock" x="300" y="520"/><use href="#rock" x="92" y="502"/><use href="#rock" transform="translate(240 345) scale(.5)"/>
   <g fill="#5a3a1e"><rect x="10" y="470" width="8" height="40"/><rect x="90" y="470" width="8" height="40"/><rect x="170" y="470" width="8" height="40"/>
     <rect x="250" y="470" width="8" height="40"/><rect x="330" y="470" width="8" height="40"/></g>
   <rect x="-600" y="470" width="1600" height="14" fill="#2c6f80" opacity=".45"/>
@@ -117,12 +197,8 @@ button.pill:active,.big:active{transform:scale(.95)}
   <path d="M-600 700V575Q80 538 200 558Q330 538 1000 580V1300H-600Z" fill="#e6d6a4"/>
   <path d="M-600 700V592Q80 556 200 576Q330 556 1000 598V1300H-600Z" fill="#78b45c"/>
   <g fill="#5e9a48"><circle cx="40" cy="660" r="4"/><circle cx="130" cy="630" r="3"/><circle cx="260" cy="650" r="4"/><circle cx="360" cy="680" r="3"/><circle cx="210" cy="600" r="3"/></g>
-  <use href="#trunk" transform="translate(62 250)"/><use href="#trunk" transform="translate(350 292) scale(1 .95)"/>
-</g>
-
-<g id="ducks"></g>
-
-<g id="front">
+  <use href="#trunk" transform="translate(62 250)"/><use href="#trunk" transform="translate(350 292) scale(1 .95)"/>`,
+    front: `
   <use href="#reed" transform="translate(372 530)"/><use href="#reed" transform="translate(20 530) scale(.9)"/>
   <use href="#crown" transform="translate(62 250)"/><use href="#crown" transform="translate(350 292) scale(.95)"/>
   <use href="#bush" transform="translate(150 590) scale(.7)"/>
@@ -132,56 +208,195 @@ button.pill:active,.big:active{transform:scale(.95)}
   <use href="#bush" transform="translate(330 646) scale(1.3)"/>
   <use href="#frond" transform="translate(-10 700) rotate(-40) scale(1.5)"/>
   <use href="#frond" transform="translate(410 700) scale(-1.4 1.4) rotate(-40)"/>
-  <use href="#frond" transform="translate(120 702) rotate(-70) scale(1.1)"/>
-</g>
+  <use href="#frond" transform="translate(120 702) rotate(-70) scale(1.1)"/>`,
+    slots: [
+      ['o',110,452],['o',190,456],['o',280,452],['o',300,452],['o',130,392],['o',250,388],['o',182,342],['o',320,342],
+      ['o',72,352],['o',300,508],['o',92,490],['o',200,498],['o',330,400],['o',150,508],['o',232,576],['o',110,578],
+      ['o',140,297],['o',278,292],['o',352,496],['o',45,412],
+      ['h',70,596],['h',330,598],['h',150,564],['h',250,574],['h',372,512],['h',22,512],
+      ['h',88,258],['h',375,310],['h',40,268],
+      ['t',150,195],['t',300,205],['t',210,260],['t',350,195],['t',30,285],['t',230,320],['t',60,430]
+    ]
+  }, {
+    name: 'Bauernhof',
+    tint: [[300, [160, 215, 235]], [420, [130, 200, 90]], [1e4, [110, 175, 80]]],
+    back: `
+<defs>
+  <linearGradient id="fsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fc8f0"/><stop offset="1" stop-color="#e4f5ff"/></linearGradient>
+  <linearGradient id="fgr" gradientUnits="userSpaceOnUse" x1="0" y1="300" x2="0" y2="700"><stop offset="0" stop-color="#9ad65e"/><stop offset="1" stop-color="#5fa941"/></linearGradient>
+  <linearGradient id="fpd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fd3ee"/><stop offset="1" stop-color="#3f9ac8"/></linearGradient>
+  <g id="fcloud" fill="#fff"><ellipse rx="34" ry="14"/><ellipse cx="-18" cy="-8" rx="18" ry="13"/><ellipse cx="14" cy="-12" rx="20" ry="15"/></g>
+  <g id="bale" stroke="#6e4f10" stroke-width="2.5"><rect x="-19" y="-14" width="38" height="28" rx="5" fill="#ecc752"/><path d="M-19 -5H19M-19 5H19" stroke="#b58a22" stroke-width="2" fill="none"/><path d="M-7 -14V14M7 -14V14" stroke="#7a5a14"/></g>
+  <g id="rbale" stroke="#6e4f10" stroke-width="2.5"><circle r="17" fill="#efce5c"/><circle r="11" fill="none" stroke="#b58a22" stroke-width="2"/><circle r="5" fill="none" stroke="#b58a22" stroke-width="2"/></g>
+  <g id="ftree" stroke="#2f6a26" stroke-width="2.5"><path d="M-5 0L-4 -28H5L6 0Z" fill="#8a5a2c" stroke="#4a2c14"/><circle cy="-42" r="22" fill="#4fae48"/><circle cx="-17" cy="-30" r="14" fill="#47a342"/><circle cx="17" cy="-30" r="14" fill="#47a342"/><circle cx="-6" cy="-50" r="7" fill="#7fd070" stroke="none"/></g>
+  <g id="fpad"><ellipse rx="12" ry="5" fill="#58b052" stroke="#2a6b30" stroke-width="1.5"/></g>
+  <g id="cat"><path d="M0 0Q-1 -25 1 -48" stroke="#5a8a2e" stroke-width="3" fill="none"/><rect x="-3" y="-62" width="6" height="18" rx="3" fill="#7a4a22" stroke="#3a2008" stroke-width="1.5"/></g>
+  <g id="hay"><path d="M-34 0Q-34 -34 0 -44Q34 -34 34 0Z" fill="#ecc752" stroke="#6e4f10" stroke-width="2.5"/><path d="M-20 -6Q-14 -26 -4 -34M6 -34Q14 -24 20 -8M-4 -10L2 -30" stroke="#b58a22" stroke-width="2" fill="none"/></g>
+  <g id="sunf"><path d="M0 0Q-3 -40 0 -78" stroke="#3a8a2e" stroke-width="5" fill="none"/><path d="M0 -30Q-18 -34 -22 -44Q-8 -42 0 -34Z" fill="#4fae48" stroke="#2f6a26" stroke-width="2"/>
+    <g transform="translate(0 -84)"><circle r="16" fill="#ffd23c" stroke="#8a5a0a" stroke-width="2.5"/><circle r="8" fill="#6b3f1a" stroke="#3a2008" stroke-width="2"/></g></g>
+  <g id="ftuft" stroke="#3f8a30" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M-8 0Q-10 -10 -14 -16M0 0Q0 -12 2 -20M8 0Q10 -9 15 -14"/></g>
+</defs>
+  <rect x="-600" y="-600" width="1600" height="910" fill="url(#fsky)"/>
+  <use href="#fcloud" transform="translate(80 130)"/><use href="#fcloud" transform="translate(255 128) scale(.7)"/>
+  <use href="#fcloud" transform="translate(345 190) scale(.9)"/><use href="#fcloud" transform="translate(160 215) scale(.6)"/>
+  <path d="M-600 300V230Q-300 180-40 225T150 215T330 230T1000 215V300Z" fill="#b6e28e"/>
+  <path d="M-600 300V262Q-300 232 0 262T260 255T1000 262V300Z" fill="#9fd478"/>
+  <use href="#ftree" transform="translate(40 300)"/><use href="#ftree" transform="translate(140 292) scale(.8)"/>
+  <g transform="translate(392 300)"><rect x="-15" y="-120" width="30" height="120" fill="#c7d2d9" stroke="#4b5a63" stroke-width="2.5"/><path d="M-15 -120Q0 -146 15 -120Z" fill="#7d8c96" stroke="#4b5a63" stroke-width="2.5"/><path d="M-15 -90H15M-15 -60H15M-15 -30H15" stroke="#8a99a3" stroke-width="2"/></g>
+  <g transform="translate(300 300)">
+    <path d="M-64 0V-70L-46 -100H46L64 -70V0Z" fill="#cf4a35" stroke="#5a1a12" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M-72 -68L-48 -108H48L72 -68" fill="none" stroke="#6b2a1c" stroke-width="6" stroke-linejoin="round"/>
+    <rect x="-24" y="-52" width="48" height="52" fill="#b33a28" stroke="#fff" stroke-width="3"/><path d="M-24 -52L24 0M24 -52L-24 0" stroke="#fff" stroke-width="3"/>
+    <rect x="-9" y="-88" width="18" height="16" fill="#3a2a22" stroke="#fff" stroke-width="3"/>
+  </g>
+  <rect x="-600" y="298" width="1600" height="1000" fill="url(#fgr)"/>
+  <g stroke="#7cc04c" stroke-width="12" opacity=".4" fill="none"><path d="M-600 345Q200 330 1000 350M-600 470Q200 455 1000 475M-600 560Q200 545 1000 565"/></g>
+  <path d="M276 300H324Q336 380 330 450Q324 520 360 570Q380 620 400 700H230Q280 620 250 560Q220 500 262 440Q290 380 276 300Z" fill="#d8b878" stroke="#b89558" stroke-width="2"/>
+  <use href="#bale" x="50" y="372"/><use href="#bale" x="88" y="372"/><use href="#bale" x="69" y="345"/>
+  <use href="#rbale" x="195" y="366"/><use href="#rbale" transform="translate(352 346) scale(1.1)"/>
+  <g stroke="#6b4a2a" stroke-width="5" stroke-linecap="round"><path d="M-600 408H1000M-600 422H1000"/></g>
+  <g fill="#8a5a2c" stroke="#4a2c14" stroke-width="2"><rect x="20" y="398" width="9" height="38"/><rect x="90" y="398" width="9" height="38"/><rect x="160" y="398" width="9" height="38"/>
+    <rect x="230" y="398" width="9" height="38"/><rect x="300" y="398" width="9" height="38"/><rect x="370" y="398" width="9" height="38"/></g>
+  <g transform="translate(105 500)">
+    <ellipse rx="86" ry="40" cy="3" fill="#4b8a3a" opacity=".5"/><ellipse rx="80" ry="36" fill="url(#fpd)" stroke="#2c6f94" stroke-width="3"/>
+    <path d="M-50 -8h30M10 6h40M-30 14h20" stroke="#fff" opacity=".5" stroke-width="2.5" stroke-linecap="round"/>
+    <use href="#fpad" x="-22" y="6"/><use href="#fpad" x="34" y="-6"/>
+    <use href="#cat" x="-70" y="10"/><use href="#cat" x="-60" y="14"/><use href="#cat" x="72" y="10"/>
+  </g>
+  <use href="#ftuft" x="230" y="500"/><use href="#ftuft" x="200" y="560"/><use href="#ftuft" x="20" y="460"/><use href="#ftuft" x="260" y="340"/><use href="#ftuft" x="130" y="330"/>`,
+    front: `
+  <use href="#hay" transform="translate(60 610) scale(1.3)"/>
+  <use href="#sunf" transform="translate(375 590)"/><use href="#sunf" transform="translate(22 540) scale(.9)"/>
+  <use href="#bush" transform="translate(150 600) scale(.8)" style="--b1:#56b84a;--b2:#62c456;--b3:#9be08c;--bs:#27632a"/>
+  <use href="#bush" transform="translate(255 604) scale(.85)" style="--b1:#56b84a;--b2:#62c456;--b3:#9be08c;--bs:#27632a"/>
+  <use href="#bush" transform="translate(330 640) scale(1.2)" style="--b1:#56b84a;--b2:#62c456;--b3:#9be08c;--bs:#27632a"/>
+  <use href="#bush" transform="translate(60 680) scale(1.4)" style="--b1:#56b84a;--b2:#62c456;--b3:#9be08c;--bs:#27632a"/>`,
+    slots: [
+      ['t',80,132],['t',255,136],['t',345,192],['t',160,216],['t',300,278],['t',200,262],['t',26,320],
+      ['o',40,262],['o',140,258],['o',256,262],['o',344,262],['o',270,222],['o',332,222],['o',392,200],['o',392,260],
+      ['o',69,330],['o',50,372],['o',88,372],['o',195,366],['o',352,346],['o',120,330],['o',240,330],
+      ['o',154,412],['o',364,414],['o',24,414],['o',224,414],
+      ['o',105,500],['o',150,508],['o',62,492],['o',88,522],['o',132,486],
+      ['o',316,450],['o',340,520],['o',300,575],['o',230,470],['o',210,540],['o',200,455],['o',240,500],
+      ['h',60,550],['h',104,578],['h',360,491],['h',36,450],['h',150,570],['h',255,572],['h',330,596]
+    ]
+  }, {
+    name: 'Herbstwald',
+    tint: [[300, [240, 190, 120]], [1e4, [190, 120, 50]]],
+    back: `
+<defs>
+  <linearGradient id="asky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6c07a"/><stop offset="1" stop-color="#fdf0d8"/></linearGradient>
+  <linearGradient id="agr" gradientUnits="userSpaceOnUse" x1="0" y1="300" x2="0" y2="700"><stop offset="0" stop-color="#b98a3e"/><stop offset="1" stop-color="#7b5528"/></linearGradient>
+  <path id="strm" d="M178 298Q150 360 215 410T185 520T250 700" fill="none" stroke-linecap="round"/>
+  <g id="atrunk" stroke="#4a2410" stroke-width="2.5" stroke-linejoin="round"><path d="M-16 4Q-9 -40 -9 -92H9Q9 -40 16 4Z" fill="#8b5a33"/><path d="M-3 -80Q-2 -40 -4 -10" stroke="#5e3a1e" stroke-width="3" fill="none"/></g>
+  <g id="acrown" stroke="#8a3a12" stroke-width="2.5"><circle r="34" fill="#e8731f"/><circle cx="-30" cy="10" r="26" fill="#d4452b"/><circle cx="30" cy="10" r="26" fill="#f2a62e"/>
+    <circle cx="-14" cy="-24" r="24" fill="#f2a62e"/><circle cx="18" cy="-22" r="24" fill="#e8731f"/><circle cx="-6" cy="-8" r="12" fill="#ffd27a" stroke="none"/></g>
+  <g id="atree"><use href="#atrunk"/><use href="#acrown" y="-100"/></g>
+  <g id="lpile"><path d="M-30 0Q-28 -22 -4 -26Q22 -28 30 0Z" fill="#e3822a" stroke="#7a3a10" stroke-width="2.5"/><path d="M-18 -6l8 -8M2 -14l9 -4M10 -4l8 -6" stroke="#c43d22" stroke-width="3" stroke-linecap="round"/><path d="M-8 -16q6 -6 12 0" stroke="#f2b134" stroke-width="3" fill="none" stroke-linecap="round"/></g>
+  <g id="shr"><path d="M-3 0Q-4 -10 -2 -12H2Q4 -10 3 0Z" fill="#f4e8d0" stroke="#5a3a20" stroke-width="1.5"/><path d="M-11 -11Q-10 -24 0 -24Q10 -24 11 -11Z" fill="#d6392b" stroke="#5a1a12" stroke-width="2"/><circle cx="-4" cy="-17" r="2" fill="#fff"/><circle cx="4" cy="-15" r="1.6" fill="#fff"/></g>
+  <g id="alog" stroke="#4a2c14" stroke-width="2.5"><rect x="-34" y="-12" width="68" height="24" rx="8" fill="#8b5a33"/><ellipse cx="-31" rx="7" ry="12" fill="#d9a666"/><ellipse cx="-31" rx="3" ry="6" fill="none" stroke-width="1.5"/></g>
+</defs>
+  <rect x="-600" y="-600" width="1600" height="900" fill="url(#asky)"/>
+  <circle cx="300" cy="135" r="52" fill="#fff" opacity=".45"/>
+  <path d="M-600 300V262Q-300 225 0 258T400 250T1000 262V300Z" fill="#dd9d52"/>
+  <path d="M-600 300V280Q-250 255 100 280T600 275V300Z" fill="#c8782f"/>
+  <use href="#atree" transform="translate(200 300) scale(.8)"/><use href="#atree" transform="translate(250 298) scale(.65)"/>
+  <rect x="-600" y="298" width="1600" height="1000" fill="url(#agr)"/>
+  <g fill="none" stroke-width="5" stroke-dasharray="6 30" opacity=".7"><path d="M-600 350H1000" stroke="#d4452b"/><path d="M-600 400H1000" stroke="#f2a62e" stroke-dashoffset="12"/>
+    <path d="M-600 470H1000" stroke="#d4452b" stroke-dashoffset="20"/><path d="M-600 540H1000" stroke="#f2a62e"/><path d="M-600 610H1000" stroke="#e8731f" stroke-dashoffset="9"/></g>
+  <use href="#strm" stroke="#6a4a22" stroke-width="64"/><use href="#strm" stroke="#5fb0cc" stroke-width="50"/><use href="#strm" stroke="#b6e6f4" stroke-width="6" stroke-dasharray="14 24" opacity=".7"/>
+  <use href="#rock" transform="translate(230 438) scale(.4)"/><use href="#rock" transform="translate(196 506) scale(.35)"/><use href="#rock" transform="translate(170 570) scale(.4)"/>
+  <use href="#alog" x="80" y="470"/><use href="#alog" transform="translate(320 500) scale(.9)"/>
+  <use href="#lpile" transform="translate(110 380)"/><use href="#lpile" transform="translate(300 420) scale(.9)"/><use href="#lpile" transform="translate(120 540) scale(1.1)"/>
+  <use href="#shr" transform="translate(50 380) scale(1.3)"/><use href="#shr" transform="translate(345 360) scale(1.2)"/><use href="#shr" transform="translate(290 560) scale(1.4)"/>
+  <use href="#shr" transform="translate(110 440)"/><use href="#shr" transform="translate(300 330) scale(.9)"/>`,
+    front: `
+  <use href="#atrunk" transform="translate(28 330) scale(1.7)"/><use href="#acrown" transform="translate(28 160) scale(1.6)"/>
+  <use href="#atrunk" transform="translate(375 340) scale(1.6)"/><use href="#acrown" transform="translate(372 180) scale(1.6)"/>
+  <use href="#lpile" transform="translate(80 610) scale(1.4)"/><use href="#lpile" transform="translate(330 600) scale(1.3)"/>
+  <use href="#bush" transform="translate(150 598) scale(.8)" style="--b1:#d8731f;--b2:#e88a2a;--b3:#f7c15a;--bs:#7a3a10"/>
+  <use href="#shr" transform="translate(240 622) scale(2)"/>
+  <use href="#bush" transform="translate(220 690) scale(1.3)" style="--b1:#c2481f;--b2:#d8602a;--b3:#f2a62e;--bs:#6a2a10"/>`,
+    slots: [
+      ['t',280,138],['t',94,232],['t',200,222],['t',256,238],['t',60,400],['t',330,400],['t',215,414],
+      ['o',150,170],['o',250,185],['o',165,262],['o',120,330],['o',290,330],['o',70,360],['o',345,350],['o',110,430],['o',300,455],
+      ['o',240,455],['o',182,530],['o',174,575],['o',80,462],['o',320,492],['o',120,505],['o',50,520],['o',290,545],['o',230,520],
+      ['o',118,582],['o',270,590],
+      ['h',70,222],['h',62,300],['h',322,240],['h',348,300],['h',80,570],['h',116,582],['h',330,562],['h',296,572],['h',150,568],['h',240,570]
+    ]
+  }, {
+    name: 'Winterlandschaft',
+    tint: [[300, [200, 220, 242]], [1e4, [232, 240, 250]]],
+    back: `
+<defs>
+  <linearGradient id="wsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9c8ea"/><stop offset="1" stop-color="#eef5fc"/></linearGradient>
+  <linearGradient id="wgr" gradientUnits="userSpaceOnUse" x1="0" y1="300" x2="0" y2="700"><stop offset="0" stop-color="#fafdff"/><stop offset="1" stop-color="#cfe0f2"/></linearGradient>
+  <g id="pine" stroke="#14402c" stroke-width="2.5" stroke-linejoin="round"><rect x="-5" y="-6" width="10" height="16" fill="#6b4423" stroke="#3a2008"/>
+    <path d="M-30 -4L0 -46L30 -4Z" fill="#2f7a4f"/><path d="M-25 -30L0 -72L25 -30Z" fill="#37895a"/><path d="M-19 -56L0 -96L19 -56Z" fill="#3f9565"/>
+    <g fill="#fff" stroke="#9ab8d0" stroke-width="2"><path d="M-22 -16L0 -46L22 -16L12 -22L4 -14L-4 -22L-12 -14Z"/><path d="M-17 -42L0 -72L17 -42L8 -48L0 -40L-8 -48Z"/><path d="M-12 -68L0 -96L12 -68L4 -72L0 -66L-4 -72Z"/></g></g>
+  <g id="smn" stroke="#5a7a99" stroke-width="2.5"><path d="M-14 -55L-34 -68M14 -55L34 -68" stroke="#5e3a1c" stroke-linecap="round"/>
+    <circle cy="-18" r="20" fill="#fff"/><circle cy="-52" r="15" fill="#fff"/><circle cy="-78" r="11" fill="#fff"/>
+    <path d="M-12 -66Q0 -61 12 -66L12 -60Q0 -55 -12 -60Z" fill="#d63a3a" stroke="#7a1a1a"/><path d="M0 -76L12 -73L0 -71Z" fill="#ff8a1c" stroke="#8a3a00" stroke-width="1.5"/>
+    <rect x="-9" y="-99" width="18" height="12" fill="#2a2f3a" stroke="#111"/><rect x="-14" y="-90" width="28" height="4" rx="2" fill="#2a2f3a" stroke="#111"/>
+    <g fill="#222" stroke="none"><circle cx="-4" cy="-80" r="1.7"/><circle cx="4" cy="-80" r="1.7"/><circle cy="-52" r="1.8"/><circle cy="-44" r="1.8"/><circle cy="-36" r="1.8"/></g></g>
+  <g id="drift"><path d="M-50 0Q-40 -22 0 -24Q40 -22 50 0Z" fill="#fff" stroke="#a9c4dc" stroke-width="2.5"/></g>
+</defs>
+  <rect x="-600" y="-600" width="1600" height="900" fill="url(#wsky)"/>
+  <circle cx="90" cy="160" r="46" fill="#fff" opacity=".5"/><circle cx="90" cy="160" r="28" fill="#fff" opacity=".7"/>
+  <path d="M-600 310V250L-30 190L40 250L110 205L200 275L290 180L370 250L440 215L1000 270V310Z" fill="#c4d6ec"/>
+  <path d="M-600 310V280L0 240L90 285L200 250L300 290L420 250L1000 285V310Z" fill="#dbe7f5"/>
+  <rect x="-600" y="298" width="1600" height="1000" fill="url(#wgr)"/>
+  <g fill="#c9dcef"><ellipse cx="80" cy="335" rx="60" ry="7"/><ellipse cx="300" cy="350" rx="70" ry="8"/><ellipse cx="200" cy="590" rx="90" ry="9"/><ellipse cx="60" cy="520" rx="50" ry="6"/><ellipse cx="350" cy="540" rx="50" ry="6"/></g>
+  <use href="#pine" transform="translate(20 314) scale(.45)"/><use href="#pine" transform="translate(70 312) scale(.4)"/><use href="#pine" transform="translate(330 314) scale(.45)"/><use href="#pine" transform="translate(380 312) scale(.4)"/>
+  <use href="#pine" transform="translate(130 340) scale(.8)"/><use href="#pine" transform="translate(280 336) scale(.7)"/><use href="#pine" transform="translate(205 318) scale(.5)"/>
+  <use href="#smn" transform="translate(58 410) scale(.8)"/><use href="#smn" transform="translate(345 400) scale(.75)"/>
+  <g transform="translate(200 485)"><ellipse rx="146" ry="58" fill="#fff" stroke="#a9c4dc" stroke-width="3"/><ellipse rx="132" ry="48" fill="#bfe7f5" stroke="#7fb4d0" stroke-width="2.5"/>
+    <ellipse rx="100" ry="34" cy="-2" fill="#d7f1fa" opacity=".7"/>
+    <path d="M-70 -10L-30 4L-10 -6L30 10M-10 -6L0 -26M60 -14L40 8M-90 14L-50 20" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></g>
+  <g fill="#fff" opacity=".9"><circle cx="40" cy="150" r="2.5"/><circle cx="150" cy="120" r="2"/><circle cx="260" cy="170" r="2.5"/><circle cx="340" cy="260" r="2"/><circle cx="20" cy="300" r="2"/><circle cx="230" cy="220" r="2"/><circle cx="380" cy="140" r="2.5"/></g>`,
+    front: `
+  <use href="#pine" transform="translate(28 630) scale(1.7)"/><use href="#pine" transform="translate(378 610) scale(1.5)"/>
+  <use href="#bush" transform="translate(140 596) scale(.8)" style="--b1:#e3edf8;--b2:#f4f9ff;--b3:#fff;--bs:#8fb0cc"/>
+  <use href="#bush" transform="translate(265 604) scale(.8)" style="--b1:#e3edf8;--b2:#f4f9ff;--b3:#fff;--bs:#8fb0cc"/>
+  <use href="#smn" transform="translate(328 642)"/>
+  <use href="#drift" transform="translate(90 700) scale(2.2)"/><use href="#drift" transform="translate(300 706) scale(2.4)"/><use href="#drift" transform="translate(200 714) scale(2)"/>`,
+    slots: [
+      ['t',90,160],['t',130,232],['t',300,218],['t',40,345],['t',150,352],['t',250,345],['t',345,335],['t',120,556],['t',212,560],
+      ['o',200,268],['o',60,262],['o',350,258],['o',200,478],['o',110,472],['o',290,482],['o',165,508],['o',245,452],['o',140,440],
+      ['o',260,515],['o',330,455],['o',58,372],['o',345,368],['o',40,470],['o',348,520],['o',62,520],['o',238,582],['o',100,590],
+      ['o',90,300],['o',320,300],
+      ['h',61,544],['h',58,504],['h',348,538],['h',354,611],['h',140,566],['h',265,574],['h',308,571]
+    ]
+  }];
+  const sceneFor = L => SCENES[(L - 1) % SCENES.length];   // Level 5-10 verwenden die Szenen zyklisch wieder
+  let curScene = null;
+  function loadScene(sc) {                                    // nur eine Szene gleichzeitig im DOM
+    if (curScene === sc) return;
+    Lb.innerHTML = sc.back; Lfr.innerHTML = sc.front; curScene = sc;
+  }
 
-<g id="hits"></g>
-<g id="fx"></g>
-</svg>
-
-<div id="hud">
-  <h1>Find 10 ducks</h1>
-  <div class="row">
-    <span class="pill" id="cnt">0 / 10</span>
-    <span class="pill" id="tm">0:00</span>
-    <button class="pill" id="mute" aria-label="Ton an/aus">🔊</button>
-  </div>
-</div>
-<button class="pill" id="hint">💡 Hinweis (+10 s)</button>
-
-<div class="overlay" id="start">
-  <h2>Find the Ducks</h2>
-  <p>Zehn Enten haben sich versteckt. Finde sie alle, so schnell du kannst!</p>
-  <button class="big" id="go">Start</button>
-</div>
-<div class="overlay hide" id="win">
-  <h2>Geschafft!</h2>
-  <p id="res"></p>
-  <button class="big" id="again">Nochmal</button>
-</div>
-
-<script>
-(() => {
-  const $ = s => document.querySelector(s);
-  const svg = $('#game'), Ld = $('#ducks'), Lh = $('#hits'), Lf = $('#fx');
-  const N = 10;
-
-  // Versteck-Slots: [Typ, x, y]  o = offen, h = hinter Vordergrund, t = getarnt (transparent)
-  const SLOTS = [
-    ['o',110,452],['o',190,456],['o',280,452],['o',300,452],['o',130,392],['o',250,388],['o',182,342],['o',320,342],
-    ['o',72,352],['o',300,508],['o',92,490],['o',200,498],['o',330,400],['o',150,508],['o',232,576],['o',110,578],
-    ['o',140,297],['o',290,296],['o',352,496],['o',45,412],
-    ['h',70,602],['h',330,606],['h',150,572],['h',262,578],['h',372,512],['h',22,512],
-    ['h',88,258],['h',375,310],['h',40,268],
-    ['t',110,205],['t',300,215],['t',210,260],['t',350,195],['t',30,285],['t',230,320],['t',60,430]
-  ];
+  // ---------- Level-Konfiguration ----------
+  const cfg = L => {
+    const k = (L - 1) / (MAXL - 1), hard = L >= 7;    // ab Level 7: deutlich kleinere Enten
+    return {
+      k, hard,
+      smin: hard ? 0.32 : 0.8 - 0.3 * k, smax: hard ? 0.45 : 1.1 - 0.35 * k,       // Entengröße schrumpft
+      nH: 2 + Math.round(3 * k), nT: 1 + Math.round(3 * k),   // Anzahl verdeckter / getarnter Enten
+      pSoft: 0.1 + 0.5 * k, opLo: 0.72 - 0.17 * k, opHi: 0.88 - 0.2 * k,   // halbtransparente Enten
+      pTint: 0.1 + 0.7 * k, tintA: 0.2 + 0.35 * k      // Anteil / Stärke der Tönung zur Umgebungsfarbe
+    };
+  };
 
   // ---------- Audio (synthetisiert) ----------
-  let ac, muted = false;
+  let ac, sfxOn = store.get('sfx', true), musicOn = store.get('music', true);
   const audio = () => {
     try {
       ac = ac || new (window.AudioContext || window.webkitAudioContext)();
-      if (ac.state !== 'running') ac.resume();
+      if (ac.state !== 'running') {
+        const p = ac.resume(); if (p && p.catch) p.catch(() => {});
+        // älteres iOS: erst ein im Gesture gestarteter Puffer entsperrt die Ausgabe
+        const b = ac.createBufferSource(); b.buffer = ac.createBuffer(1, 1, 22050); b.connect(ac.destination); b.start(0);
+      }
     } catch (e) {}
     return ac;
   };
@@ -200,58 +415,118 @@ button.pill:active,.big:active{transform:scale(.95)}
     o.start(t); o.stop(t + dur + 0.03);
   }
   function quack() {
-    if (muted || !audio()) return;
+    if (!sfxOn || !audio()) return;
     const t = ac.currentTime, p = 0.9 + Math.random() * 0.25;
     tone('sawtooth', 640 * p, 300 * p, t, 0.11, 0.7, 1100, 3);
     tone('square', 320 * p, 150 * p, t, 0.11, 0.12, 900, 2);
     tone('sawtooth', 570 * p, 260 * p, t + 0.15, 0.09, 0.55, 1000, 3);
   }
   function jingle() {
-    if (muted || !audio()) return;
+    if (!sfxOn || !audio()) return;
     const t = ac.currentTime;
     [523, 659, 784, 1047].forEach((f, i) => tone('triangle', f, f, t + i * 0.12, 0.26, 0.35, 2000, 0.7));
     [523, 659, 784, 1047].forEach(f => tone('triangle', f, f, t + 0.55, 0.7, 0.18, 2000, 0.7));
   }
 
+  // ---------- Hintergrundmusik (Chiptune-Loop, Lookahead-Scheduler) ----------
+  // 8 Takte à 8 Achtel (132 BPM): C - G - Am - F - C - G - F - G/C. 0 = Pause (MIDI-Noten sonst).
+  const MEL = [
+    76,79,76,72,76,79,84,79,  74,79,71,74,79,83,79,74,  72,76,81,76,72,76,69,72,  69,72,77,72,81,77,72,69,
+    76,76,79,79,84,79,76,72,  74,74,79,79,83,79,74,71,  69,72,77,81,84,81,77,72,  74,79,83,86,84,0,79,0];
+  const BASS = [48, 43, 45, 41, 48, 43, 41, 43];
+  const STEP = 60 / 132 / 2, mf = m => 440 * Math.pow(2, (m - 69) / 12);
+  let mTimer = 0, mNext = 0, mStep = 0;
+  function note(out, type, m, t, dur, vol) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = mf(m);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(out);
+    o.start(t); o.stop(t + dur + 0.02);       // stoppt sich selbst, kein Aufräumen nötig
+  }
+  function syncMusic() {
+    const want = musicOn && running && !document.hidden && ac && ac.state !== 'closed';
+    if (want && !mTimer) {
+      const out = ac.createGain(), lp = ac.createBiquadFilter();
+      out.gain.value = 0.055; lp.type = 'lowpass'; lp.frequency.value = 2400;
+      out.connect(lp); lp.connect(ac.destination);
+      mNext = ac.currentTime + 0.08; mStep = 0;
+      const sched = () => {
+        while (mNext < ac.currentTime + 0.35) {
+          const s = mStep & 7, r = BASS[mStep >> 3], m = MEL[mStep];
+          if (m) note(out, 'square', m, mNext, STEP * 0.85, 0.5);
+          if (s === 0 || s === 4) note(out, 'triangle', r, mNext, STEP * 1.9, 1);
+          else if (s === 2) note(out, 'triangle', r + 12, mNext, STEP * 0.8, 0.45);
+          else if (s === 6) note(out, 'triangle', r + 7, mNext, STEP * 0.8, 0.45);
+          mNext += STEP; mStep = (mStep + 1) & 63;
+        }
+      };
+      sched(); mTimer = setInterval(sched, 100);
+      syncMusic.out = [out, lp];
+    } else if (!want && mTimer) {
+      clearInterval(mTimer); mTimer = 0;
+      const [out, lp] = syncMusic.out;
+      out.gain.setTargetAtTime(0, ac.currentTime, 0.04);
+      setTimeout(() => { out.disconnect(); lp.disconnect(); }, 500);
+    }
+  }
+
   // ---------- Zustand ----------
   let ducks = [], found = 0, running = false, t0 = 0, endT = 0, pen = 0, hintOn = false;
+  let maxLevel = Math.min(MAXL, Math.max(1, store.get('level', 1) | 0)), level = maxLevel, best = store.get('best', {});
+  if (!best || typeof best !== 'object') best = {};
   const rnd = (a, b) => a + Math.random() * (b - a);
   const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const ms = () => (running ? performance.now() : endT) - t0 + pen;
   const fmt = v => { const s = Math.floor(v / 1000); return (s / 60 | 0) + ':' + String(s % 60).padStart(2, '0'); };
   const tick = () => { $('#tm').textContent = fmt(ms()); };
   const NS = 'http://www.w3.org/2000/svg';
+  const show = id => { ['#start', '#win', '#done'].forEach(s => $(s).classList.toggle('hide', s !== id)); };
 
   function newRound() {
-    const all = shuffle(SLOTS.slice()), out = [];
+    const sc = sceneFor(level), c = cfg(level);
+    loadScene(sc);
+    const all = shuffle(sc.slots.slice()), out = [];
     const add = (f, n, d) => {
       for (const s of all)
         if (n > 0 && out.length < N && f(s) && !out.includes(s) && out.every(o => Math.hypot(o[1] - s[1], o[2] - s[2]) >= d)) { out.push(s); n--; }
     };
-    add(s => s[0] === 'h', 3 + (Math.random() < 0.5 ? 1 : 0), 58);
-    add(s => s[0] === 't', 2, 58);
+    add(s => s[0] === 'h', c.nH, 58);
+    add(s => s[0] === 't', c.nT, 58);
     add(s => s[0] === 'o', N, 58);
     add(() => true, N, 58);
     add(() => true, N, 40);
+    add(() => true, N, 0);                       // Sicherheitsnetz: immer genau N Enten
     const soft = out.map((s, i) => i).filter(i => out[i][0] !== 'h');   // Mini-Ente nie hinter Vordergrund
     const tiny = soft[Math.random() * soft.length | 0];
     ducks = out.map(([k, x, y], i) => {
-      const s = i === tiny ? 0.5 : k === 'h' ? rnd(0.65, 0.95) : k === 't' ? rnd(0.55, 0.8) : rnd(0.55, 1.05);
-      const op = k === 't' ? rnd(0.5, 0.7) : k === 'o' && Math.random() < 0.25 ? 0.75 : 1;
-      return { x: x + rnd(-5, 5), y: y + rnd(-5, 5), s, op, flip: Math.random() < 0.5 ? -1 : 1, found: false };
+      const tn = i === tiny;
+      const s = tn ? (c.hard ? 0.27 : 0.5 + 0.1 * (1 - c.k))
+        : k === 'h' ? (c.hard ? rnd(0.5, 0.58) : rnd(Math.max(0.6, c.smin), Math.min(0.95, Math.max(0.7, c.smax))))
+        : k === 't' ? (c.hard ? rnd(0.36, 0.48) : rnd(Math.max(0.55, c.smin - 0.1), Math.min(0.9, c.smax)))
+        : rnd(c.smin, c.smax);
+      const op = k === 't' ? rnd(0.5 - 0.1 * c.k, 0.7 - 0.1 * c.k) : k === 'o' && !tn && Math.random() < c.pSoft ? rnd(c.opLo, c.opHi) : 1;
+      const tint = !tn && Math.random() < c.pTint ? sc.tint.find(b => y <= b[0])[1] : null;
+      return { x: x + rnd(-5, 5), y: y + rnd(-5, 5), s, op, tint, flip: Math.random() < 0.5 ? -1 : 1, found: false };
     });
     Ld.innerHTML = Lh.innerHTML = Lf.innerHTML = '';
     ducks.forEach((d, i) => {
+      // Tönung direkt in die Farben gerechnet (statt SVG-Filter auf animierter Gruppe = Neuberechnung pro Frame)
+      const art = d.tint ? tintDuck(c.tintA, d.tint) : DUCK;
+      // Idle-Animation in innerer Gruppe .ia; Phasen/Dauern pro Ente zufällig
+      const sty = `--wd:${rnd(2.4, 3.8).toFixed(2)}s;--wl:-${rnd(0, 3).toFixed(2)}s;--bl:${rnd(4, 7).toFixed(2)}s;--bd:-${rnd(0, 6).toFixed(2)}s`;
       Ld.insertAdjacentHTML('beforeend',
         `<g id="d${i}" transform="translate(${d.x} ${d.y})"><g class="pop"><g class="body" opacity="${d.op}" transform="scale(${d.flip * d.s} ${d.s})">` +
-        `<use href="#duck" x="-20" y="-20" width="40" height="40"/></g></g></g>`);
+        `<g class="ia" style="${sty}"><g class="art" transform="translate(-20 -20)">${art}</g></g></g></g></g>`);
       Lh.insertAdjacentHTML('beforeend',
-        `<circle class="hit" data-i="${i}" cx="${d.x}" cy="${d.y}" r="${Math.max(24, 22 * d.s + 8)}"/>`);
+        `<circle class="hit" data-i="${i}" cx="${d.x}" cy="${d.y}" r="${Math.max(25, 22 * d.s + 8)}"/>`);
     });
     found = 0; pen = 0; hintOn = false; running = true; t0 = performance.now();
+    $('#lv').textContent = 'Level ' + level;
     $('#cnt').textContent = `0 / ${N}`;
-    $('#start').classList.add('hide'); $('#win').classList.add('hide');
-    tick();
+    show(null);
+    tick(); syncMusic();
   }
 
   function el(name, attrs, parent) {
@@ -265,8 +540,9 @@ button.pill:active,.big:active{transform:scale(.95)}
     if (!running || d.found) return;
     d.found = true; found++;
     quack();
-    const g = $('#d' + i);
-    g.querySelector('.body').setAttribute('opacity', 1);
+    const g = $('#d' + i), body = g.querySelector('.body');
+    body.setAttribute('opacity', 1);   // gefundene Ente: volle Farbe
+    if (d.tint) body.querySelector('.art').innerHTML = DUCK;
     Lf.appendChild(g);                 // Ente kommt vor den Vordergrund
     g.classList.add('found');
     const r = 20 * d.s + 8;
@@ -276,14 +552,25 @@ button.pill:active,.big:active{transform:scale(.95)}
     el('path', { d: 'M-4 0L-1 3.5L4.5 -3', fill: 'none', stroke: '#fff', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, b);
     Lh.querySelector(`[data-i="${i}"]`).remove();
     $('#cnt').textContent = `${found} / ${N}`;
-    if (found === N) {
-      running = false; endT = performance.now(); tick();
-      setTimeout(() => {
-        $('#res').textContent = `Alle ${N} Enten gefunden in ${fmt(ms())}`;
-        $('#win').classList.remove('hide');
-        jingle();
-      }, 800);
-    }
+    if (found === N) win();
+  }
+
+  function win() {
+    running = false; endT = performance.now(); tick(); syncMusic();
+    const t = Math.round(ms()), prev = best[level], isBest = !prev || t < prev;
+    if (isBest) { best[level] = t; store.set('best', best); }
+    if (level < MAXL && level + 1 > maxLevel) { maxLevel = level + 1; store.set('level', maxLevel); }
+    setTimeout(() => {
+      if (level === MAXL) {
+        $('#dres').textContent = `Level ${MAXL} in ${fmt(t)}` + (isBest ? ' – neue Bestzeit!' : '');
+        show('#done');
+      } else {
+        $('#res').textContent = `Level ${level}: alle ${N} Enten gefunden in ${fmt(t)}`;
+        $('#bt').textContent = isBest ? 'Neue Bestzeit!' : `Bestzeit: ${fmt(best[level])}`;
+        show('#win');
+      }
+      jingle();
+    }, 800);
   }
 
   function hint() {
@@ -295,6 +582,19 @@ button.pill:active,.big:active{transform:scale(.95)}
     $('#tm').classList.add('bad'); setTimeout(() => $('#tm').classList.remove('bad'), 900);
     const c = el('circle', { class: 'hintring', cx: d.x, cy: d.y, r: Math.max(34, 26 * d.s + 10) }, Lf);
     c.addEventListener('animationend', () => { c.remove(); hintOn = false; });
+  }
+
+  function refreshStart() {
+    $('#cont').textContent = maxLevel > 1 ? `Weiter bei Level ${maxLevel}` : '';
+    $('#reset').style.display = maxLevel > 1 ? '' : 'none';
+    $('#lv').textContent = 'Level ' + maxLevel;
+    loadScene(sceneFor(maxLevel));
+  }
+  function fromScratch() { maxLevel = level = 1; store.set('level', 1); newRound(); }
+  function refreshToggles() {
+    $('#sfx').textContent = sfxOn ? '🔊' : '🔇'; $('#sfx').classList.toggle('off', !sfxOn);
+    $('#mus').classList.toggle('off', !musicOn);
+    $('#sfx').setAttribute('aria-pressed', sfxOn); $('#mus').setAttribute('aria-pressed', musicOn);
   }
 
   // ---------- Eingaben ----------
@@ -309,18 +609,25 @@ button.pill:active,.big:active{transform:scale(.95)}
     const c = el('circle', { class: 'rip', cx: q.x, cy: q.y, r: 12 }, Lf);
     c.addEventListener('animationend', () => c.remove());
   });
-  $('#go').addEventListener('click', () => { audio(); newRound(); });
-  $('#again').addEventListener('click', () => { audio(); newRound(); });
-  $('#hint').addEventListener('click', hint);
-  $('#mute').addEventListener('click', () => {
-    muted = !muted; $('#mute').textContent = muted ? '🔇' : '🔊';
+  $('#go').addEventListener('click', () => { audio(); level = maxLevel; newRound(); });
+  $('#reset').addEventListener('click', () => {
+    if (maxLevel > 1) { let ok = true; try { ok = confirm('Fortschritt zurücksetzen und bei Level 1 beginnen?'); } catch (e) {} if (!ok) return; }
+    audio(); fromScratch();
   });
+  $('#next').addEventListener('click', () => { audio(); level = Math.min(MAXL, level + 1); newRound(); });
+  $('#again').addEventListener('click', () => { audio(); newRound(); });
+  $('#again2').addEventListener('click', () => { audio(); newRound(); });
+  $('#restart').addEventListener('click', () => { audio(); fromScratch(); });
+  $('#hint').addEventListener('click', hint);
+  $('#sfx').addEventListener('click', () => { sfxOn = !sfxOn; store.set('sfx', sfxOn); refreshToggles(); });
+  $('#mus').addEventListener('click', () => { musicOn = !musicOn; store.set('music', musicOn); refreshToggles(); audio(); syncMusic(); });
   setInterval(() => { if (running) tick(); }, 250);
-  // Timer pausieren, solange der Tab verborgen ist
+  // Timer und Musik pausieren, solange der Tab verborgen ist
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) hiddenAt = performance.now();
     else if (hiddenAt) { if (running) t0 += performance.now() - hiddenAt; hiddenAt = 0; tick(); }
+    syncMusic();
   });
 
   // Zoom / Bounce verhindern
@@ -328,6 +635,8 @@ button.pill:active,.big:active{transform:scale(.95)}
   document.addEventListener('dblclick', e => e.preventDefault());
   document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
   document.addEventListener('contextmenu', e => e.preventDefault());
+
+  refreshToggles(); refreshStart();
 })();
 </script>
 </body>
